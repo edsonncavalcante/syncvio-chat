@@ -14,13 +14,16 @@ ENV RAILS_ENV=production
 # Define a chave secreta para pré-compilação de assets
 ENV SECRET_KEY_BASE=precompile_placeholder
 
+# Verifica se os arquivos necessários existem antes de copiá-los
 # Copia e instala as dependências Ruby
-COPY Gemfile Gemfile.lock ./
-RUN bundle install --without development test --deployment --clean
+COPY Gemfile Gemfile.lock ./ 
+RUN test -f Gemfile && test -f Gemfile.lock \
+    && bundle install --without development test --deployment --clean
 
 # Copia e instala as dependências JavaScript
-COPY package.json yarn.lock ./
-RUN yarn install --check-files --frozen-lockfile
+COPY package.json yarn.lock ./ 
+RUN test -f package.json && test -f yarn.lock \
+    && yarn install --check-files --frozen-lockfile
 
 # Copia o restante do código e arquivos customizados
 COPY . ./
@@ -30,7 +33,6 @@ RUN bundle exec rake assets:precompile
 
 # Remove arquivos desnecessários do ambiente de build
 RUN rm -rf \
-    node_modules \
     tmp/cache \
     log/* \
     spec \
@@ -48,6 +50,7 @@ WORKDIR /app
 # Copia apenas os arquivos necessários da etapa de build
 COPY --from=builder /app/public /app/public
 COPY --from=builder /app/app/views/devise/mailer/ /app/app/views/devise/mailer/
+COPY --from=builder /app/config /app/config
 
-# Define o comando de fallback
+# Define o comando padrão de execução
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
