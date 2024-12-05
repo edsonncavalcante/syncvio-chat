@@ -1,5 +1,5 @@
 # Etapa de build (compilação de dependências e assets)
-FROM sendingtk/chatwoot:v3.13.8 as builder
+FROM sendingtk/chatwoot:v3.13.8 AS builder
 
 # Instala apenas as dependências essenciais
 RUN apk update && apk add --no-cache \
@@ -13,7 +13,6 @@ WORKDIR /app
 
 # Define o ambiente como produção
 ENV RAILS_ENV=production
-ENV SECRET_KEY_BASE=precompile_placeholder
 
 # Instala dependências Ruby e Yarn
 RUN bundle install --without development test
