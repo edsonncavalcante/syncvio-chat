@@ -1,4 +1,4 @@
-FROM chatwoot/chatwoot:latest
+FROM sendingtk/chatwoot:v3.13.8
 
 # instala o nodejs e o yarn para que possamos recompilar os assets do rails
 RUN apk update && apk add --no-cache \
