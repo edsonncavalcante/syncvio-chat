@@ -1,34 +1,26 @@
+FROM chatwoot/chatwoot:latest
 
-FROM sendingtk/chatwoot:v3.13.8
-
-# Instala dependências do sistema
+# instala o nodejs e o yarn para que possamos recompilar os assets do rails
 RUN apk update && apk add --no-cache \
-    nodejs-current \
-    yarn \
-    build-base \
-    git \
-    postgresql-dev \
-    libxml2-dev \
-    libxslt-dev \
-    file \
-    imagemagick
+  nodejs-current \
+  yarn
 
-# Define o diretório de trabalho
+# coloca o diretório de trabalho na pasta app
 WORKDIR /app
 
-# Define o ambiente como produção
+# informa o ambiente de build como produção
 ENV RAILS_ENV=production
-ENV SECRET_KEY_BASE=precompile_placeholder
 
-# Instala dependências Ruby e Yarn
-RUN bundle install --without development test
-RUN yarn install --check-files
-
-# Copia os arquivos customizados
+# copia o arquivo customizado do tailwind
 COPY ./tailwind.config.js /app/tailwind.config.js
-COPY branding/*.* /app/public/
-COPY app/javascript/dashboard/components/ChatList.vue /app/app/javascript/dashboard/components/ChatList.vue
 
-# Limpa e recompila os assets do Rails
-RUN bundle exec rake assets:clean
-RUN bundle exec rake assets:precompile --trace
+# Coloque os arquivos de branding na pasta branding
+COPY branding/*.* /app/public/
+
+COPY emails/*.* /app/app/views/devise/mailer/
+
+# limpa os assets do rails
+RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:clean
+
+# recompila os assets do rails
+RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:precompile
