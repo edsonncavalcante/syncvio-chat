@@ -1,26 +1,39 @@
-FROM sendingtk/chatwoot:v3.13.8
+# Etapa de build (compilação de dependências e assets)
+FROM sendingtk/chatwoot:v3.13.8 as builder
 
-# instala o nodejs e o yarn para que possamos recompilar os assets do rails
+# Instala apenas as dependências essenciais
 RUN apk update && apk add --no-cache \
-  nodejs-current \
-  yarn
+    nodejs-current \
+    yarn \
+    postgresql-dev \
+    imagemagick
 
-# coloca o diretório de trabalho na pasta app
+# Define o diretório de trabalho
 WORKDIR /app
 
-# informa o ambiente de build como produção
+# Define o ambiente como produção
 ENV RAILS_ENV=production
+ENV SECRET_KEY_BASE=precompile_placeholder
 
-# copia o arquivo customizado do tailwind
-COPY ./tailwind.config.js /app/tailwind.config.js
+# Instala dependências Ruby e Yarn
+RUN bundle install --without development test
+RUN yarn install --check-files
 
-# Coloque os arquivos de branding na pasta branding
+# Copia os arquivos customizados para branding e emails
 COPY branding/*.* /app/public/
-
 COPY emails/*.* /app/app/views/devise/mailer/
 
-# limpa os assets do rails
-RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:clean
+# Compila os assets
+RUN bundle exec rake assets:clean
+RUN bundle exec rake assets:precompile --trace
 
-# recompila os assets do rails
-RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:precompile
+# Etapa final (imagem mínima)
+FROM sendingtk/chatwoot:v3.13.8
+
+WORKDIR /app
+
+# Copia apenas os arquivos necessários da etapa de build
+COPY --from=builder /app/public /app/public
+COPY --from=builder /app/app/views/devise/mailer/ /app/app/views/devise/mailer/
+COPY --from=builder /app/tmp /app/tmp
+COPY --from=builder /app/log /app/log
