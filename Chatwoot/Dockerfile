@@ -1,21 +1,20 @@
 # Etapa de build (compilação de dependências e assets)
 FROM sendingtk/chatwoot:v3.13.8 AS builder
 
-# Instala apenas as dependências essenciais
 RUN apk update && apk add --no-cache \
     nodejs-current \
     yarn \
     postgresql-dev \
     imagemagick
 
-# Define o diretório de trabalho
 WORKDIR /app
-
-# Define o ambiente como produção
 ENV RAILS_ENV=production
 
+# Adicione a configuração da chave diretamente
+ENV SECRET_KEY_BASE=e6a1d765b64e8e123abc4a78907c8f675dfa2cd6dce56f3d12345ef12345abcd
+
 # Instala dependências Ruby e Yarn
-RUN bundle install --without development test
+RUN bundle install --without development test --deployment
 RUN yarn install --check-files
 
 # Copia os arquivos customizados para branding e emails
