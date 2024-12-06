@@ -1,28 +1,28 @@
-# Etapa de build (compilação de dependências e assets)
-FROM sendingtk/chatwoot:v3.13.8 AS builder
 
-# Instala Node.js e dependências necessárias
-RUN apk update && apk add --no-cache \
-    nodejs \
-    yarn
-
-WORKDIR /app
-ENV RAILS_ENV=production
-ENV SECRET_KEY_BASE=precompile_placeholder
-
-# Copia os arquivos customizados para branding e emails
-COPY branding/*.* /app/public/
-COPY emails/*.* /app/app/views/devise/mailer/
-
-# Recompila os assets
-RUN bundle exec rake assets:clean
-RUN bundle exec rake assets:precompile
-
-# Etapa final (imagem mínima)
 FROM sendingtk/chatwoot:v3.13.8
 
+# instala o nodejs e o yarn para que possamos recompilar os assets do rails
+RUN apk update && apk add --no-cache \
+  nodejs-current \
+  yarn
+
+# coloca o diretório de trabalho na pasta app
 WORKDIR /app
 
-# Copia apenas os arquivos necessários da etapa de build
-COPY --from=builder /app/public /app/public
-COPY --from=builder /app/app/views/devise/mailer/ /app/app/views/devise/mailer/
+# informa o ambiente de build como produção
+ENV RAILS_ENV=production
+
+# copia o arquivo customizado do tailwind
+COPY ./tailwind.config.js /app/tailwind.config.js
+
+COPY emails/*.* /app/views/devise/mailer/
+
+# Coloque os arquivos de branding na pasta branding
+COPY branding/*.* /app/public/
+
+# limpa os assets do rails
+RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:clean
+
+# recompila os assets do rails
+RUN SECRET_KEY_BASE=precompile_placeholder RAILS_ENV=production bundle exec rake assets:precompile
+
