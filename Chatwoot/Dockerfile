@@ -1,6 +1,11 @@
 # Etapa de build (compilação de dependências e assets)
 FROM sendingtk/chatwoot:v3.13.8 AS builder
 
+# Instala Node.js e dependências necessárias
+RUN apk update && apk add --no-cache \
+    nodejs \
+    yarn
+
 WORKDIR /app
 ENV RAILS_ENV=production
 ENV SECRET_KEY_BASE=precompile_placeholder
@@ -18,6 +23,6 @@ FROM sendingtk/chatwoot:v3.13.8
 
 WORKDIR /app
 
-# Copia apenas os arquivos alterados da etapa de build
+# Copia apenas os arquivos necessários da etapa de build
 COPY --from=builder /app/public /app/public
 COPY --from=builder /app/app/views/devise/mailer/ /app/app/views/devise/mailer/
